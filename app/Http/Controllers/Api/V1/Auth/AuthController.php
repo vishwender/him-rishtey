@@ -122,10 +122,7 @@ class AuthController extends Controller
         |
         */
 
-        $passwordIsHashed = Hash::isHashed((string) $member->password);
-        $passwordMatches = $passwordIsHashed
-            ? Hash::check($password, (string) $member->password)
-            : hash_equals((string) $member->password, $password);
+        $passwordMatches = hash_equals((string) $member->password, $password);
 
         if (! $passwordMatches) {
 
@@ -133,11 +130,6 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'Invalid login credentials.',
             ], 401);
-        }
-
-        if (! $passwordIsHashed) {
-            $member->password = Hash::make($password);
-            $member->save();
         }
 
         /*
@@ -570,7 +562,7 @@ class AuthController extends Controller
         |--------------------------------------------------------------------------
         */
 
-                $member->password = Hash::make($validated['password']);
+                $member->password = $validated['password'];
 
                 /*
         |--------------------------------------------------------------------------
@@ -1803,9 +1795,7 @@ class AuthController extends Controller
     |
     */
 
-        $currentPasswordMatches = Hash::isHashed((string) $member->password)
-            ? Hash::check($validated['current_password'], (string) $member->password)
-            : hash_equals((string) $member->password, $validated['current_password']);
+        $currentPasswordMatches = hash_equals((string) $member->password, $validated['current_password']);
 
         if (! $currentPasswordMatches) {
 
@@ -1835,7 +1825,7 @@ class AuthController extends Controller
     |--------------------------------------------------------------------------
     */
 
-        $member->password = Hash::make($validated['new_password']);
+        $member->password = $validated['new_password'];
 
         $member->save();
 

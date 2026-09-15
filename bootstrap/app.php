@@ -9,6 +9,8 @@ use App\Http\Middleware\EnsureContentManagerAccess;
 use App\Http\Middleware\EnsureRelationshipManagerMemberAccess;
 use App\Http\Middleware\ResolveApplication;
 use App\Http\Middleware\SetAdminSiteConnection;
+use App\Website\Http\Middleware\RequireWebsite;
+use App\Website\Http\Middleware\ResolveWebsite;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -23,7 +25,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->prependToGroup('web', ResolveWebsite::class);
+        $middleware->trimStrings(except: ['new_password', 'new_password_confirmation']);
+        $middleware->redirectGuestsTo(fn (Request $request) => route('login-form'));
         $middleware->alias([
+            'website.site' => RequireWebsite::class,
             'admin.auth' => AdminAuthenticate::class,
             'admin.guest' => AdminGuest::class,
             'permission' => CheckPermission::class,

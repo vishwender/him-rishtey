@@ -179,7 +179,7 @@ class ForgotPasswordController extends Controller
             ], 422);
         }
 
-        $member->password = Hash::make($request->string('password')->toString());
+        $member->password = $request->string('password')->toString();
         $member->save();
 
         PersonalAccessToken::query()

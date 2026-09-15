@@ -7,6 +7,8 @@ export default defineConfig({
     plugins: [
         laravel({
             input: [
+                'resources/css/home/home.css',
+                'resources/js/home.js',
                 'resources/css/admin/admin.css',
                 'resources/css/admin/dashboard/dashboard.css',
                 'resources/css/admin/members/create-member.css',

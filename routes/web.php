@@ -40,9 +40,22 @@ use App\Http\Controllers\Admin\SuccessStoryController;
 use App\Http\Controllers\Admin\UserRatingController;
 use App\Http\Controllers\Admin\WalletOfferController;
 use App\Http\Controllers\SharedProfileController;
+use App\Website\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome');
+Route::get('/', function () {
+    if (config('site.current')) {
+        return app(WelcomeController::class)->index();
+    }
+
+    return view('welcome');
+})->name('welcome');
+
+Route::middleware('website.site')->group(function () {
+    require __DIR__.'/website/public.php';
+    require __DIR__.'/website/auth.php';
+    require __DIR__.'/website/member.php';
+});
 
 Route::get('/shared-profile/{site}/{member}', [SharedProfileController::class, 'show'])->middleware(['signed', 'throttle:60,1'])
     ->whereNumber(['site', 'member'])

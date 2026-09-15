@@ -70,7 +70,7 @@
                             @if($story->photo)
 
                             <img
-                                src="{{ asset('storage/success-stories/' . $story->photo) }}"
+                                src="{{ \App\Services\SuccessStoryPhoto::url($story->photo) }}"
                                 alt="Success Story"
                                 width="60"
                                 height="60"

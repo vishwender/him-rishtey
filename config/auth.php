@@ -2,6 +2,7 @@
 
 use App\Models\Admin;
 use App\Models\User;
+use App\Website\Models\Member;
 
 return [
 
@@ -39,6 +40,7 @@ return [
     */
 
     'guards' => [
+        'member' => ['driver' => 'session', 'provider' => 'members'],
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
@@ -67,6 +69,7 @@ return [
     */
 
     'providers' => [
+        'members' => ['driver' => 'member_tokens', 'model' => Member::class],
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),

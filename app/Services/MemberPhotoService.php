@@ -312,6 +312,10 @@ class MemberPhotoService
     |
     */
 
+        if (is_file(public_path('photos/photo/'.ltrim($photo, '/')))) {
+            return asset('photos/photo/'.ltrim($photo, '/'));
+        }
+
         return asset('storage/'.ltrim($photo, '/'));
     }
 }

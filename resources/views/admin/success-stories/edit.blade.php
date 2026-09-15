@@ -84,7 +84,7 @@
 
                         @if($story->photo)
                         <div class="mb-3">
-                            <img src="{{ asset('images/success_stories/' . $story->photo) }}"
+                            <img src="{{ \App\Services\SuccessStoryPhoto::url($story->photo) }}"
                                 alt="Success Story"
                                 style="
                                          width: 180px;

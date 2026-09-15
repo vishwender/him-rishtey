@@ -12,7 +12,7 @@ class SiteDatabaseService
     /**
      * Connect to the selected site's database.
      */
-    public function connect(Site $site): void
+    public function connect(Site $site, bool $strict = true): void
     {
         $connection = [
 
@@ -38,7 +38,7 @@ class SiteDatabaseService
 
             'prefix_indexes' => true,
 
-            'strict' => true,
+            'strict' => $strict,
 
             'engine' => null,
 
