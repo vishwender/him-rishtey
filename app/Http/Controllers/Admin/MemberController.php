@@ -29,6 +29,7 @@ use App\Services\MemberProfileCompletion;
 use App\Services\RelationshipManagerAccess;
 use App\Services\SiteManager;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -66,8 +67,9 @@ class MemberController extends Controller
         abort_unless($staff, 422, 'Select an active staff user.');
 
         DB::connection('site')->transaction(function () use ($validated, $staff) {
-            $members = SiteMember::query()->whereIn('id', $validated['member_ids'])
-                ->where(fn ($query) => $query->whereNull('active')->orWhere('active', ''))
+
+            $members = $this->withoutDeletionRequests(SiteMember::query())->whereIn('id', $validated['member_ids'])
+                ->where(fn($query) => $query->whereNull('active')->orWhere('active', ''))
                 ->lockForUpdate()->get();
             abort_unless($members->count() === count($validated['member_ids']), 422, 'Some selected members are no longer new. Refresh the list and try again.');
 
@@ -83,7 +85,7 @@ class MemberController extends Controller
     {
         $newMembersOnly = $request->routeIs('admin.members.new');
         $bannedMembersOnly = $request->routeIs('admin.members.banned');
-        $query = SiteMember::query();
+        $query = $this->withoutDeletionRequests(SiteMember::query());
 
         if ($bannedMembersOnly) {
             $query->where('active', 'Banned');
@@ -359,7 +361,7 @@ class MemberController extends Controller
         $relationshipManagers = Admin::query()
             ->when(
                 $relationshipManagerAccess->isRestricted(),
-                fn ($query) => $query->whereKey(
+                fn($query) => $query->whereKey(
                     $relationshipManagerAccess->admin()?->getKey()
                 )
             )
@@ -770,7 +772,7 @@ class MemberController extends Controller
             ]
         );
 
-        $whatsappShareUrl = 'https://wa.me/?text='.rawurlencode(
+        $whatsappShareUrl = 'https://wa.me/?text=' . rawurlencode(
             "View {$member->full_name}'s profile: {$shareUrl}"
         );
 
@@ -881,7 +883,7 @@ class MemberController extends Controller
         $relationshipManagers = Admin::query()
             ->when(
                 $relationshipManagerAccess->isRestricted(),
-                fn ($query) => $query->whereKey(
+                fn($query) => $query->whereKey(
                     $relationshipManagerAccess->admin()?->getKey()
                 )
             )
@@ -1142,7 +1144,7 @@ class MemberController extends Controller
 
         foreach ($submittedProfileRanges as $index => $range) {
             $filledValues = collect(['range_from', 'range_to', 'price'])
-                ->filter(fn (string $field) => ($range[$field] ?? '') !== '')
+                ->filter(fn(string $field) => ($range[$field] ?? '') !== '')
                 ->count();
 
             if ($filledValues > 0 && $filledValues < 3) {
@@ -1153,14 +1155,16 @@ class MemberController extends Controller
         }
 
         $profileRanges = $submittedProfileRanges
-            ->filter(fn (array $range) => collect($range)->contains(fn ($value) => $value !== null && $value !== ''))
+            ->filter(fn(array $range) => collect($range)->contains(fn($value) => $value !== null && $value !== ''))
             ->sortBy('range_from')
             ->values();
         $previousRangeEnd = 0;
 
         foreach ($profileRanges as $range) {
-            if ((int) $range['range_from'] > (int) $range['range_to']
-                || (int) $range['range_from'] <= $previousRangeEnd) {
+            if (
+                (int) $range['range_from'] > (int) $range['range_to']
+                || (int) $range['range_from'] <= $previousRangeEnd
+            ) {
                 throw ValidationException::withMessages([
                     'profile_ranges' => 'Profile view ranges must have a valid start and end and must not overlap.',
                 ]);
@@ -1447,7 +1451,7 @@ class MemberController extends Controller
 
             if ($profileRanges->isNotEmpty()) {
                 DB::connection('site')->table('member_profile_range')->insert(
-                    $profileRanges->map(fn (array $range) => [
+                    $profileRanges->map(fn(array $range) => [
                         'member_id' => $member->id,
                         'range_from' => $range['range_from'],
                         'range_to' => $range['range_to'],
@@ -1482,11 +1486,11 @@ class MemberController extends Controller
             $file = $request->file('id_proof');
 
             $filename =
-                'id-proof-'.
-                $member->id.
-                '-'.
-                Str::random(10).
-                '.'.
+                'id-proof-' .
+                $member->id .
+                '-' .
+                Str::random(10) .
+                '.' .
                 $file->getClientOriginalExtension();
 
             $file->storeAs(
@@ -1510,7 +1514,7 @@ class MemberController extends Controller
             ->route('admin.members.new')
             ->with(
                 'success',
-                'Member created successfully. Profile ID: '.
+                'Member created successfully. Profile ID: ' .
                     $member->profile_id
             );
     }
@@ -1582,7 +1586,7 @@ class MemberController extends Controller
         $relationshipManagers = Admin::query()
             ->when(
                 $relationshipManagerAccess->isRestricted(),
-                fn ($query) => $query->whereKey(
+                fn($query) => $query->whereKey(
                     $relationshipManagerAccess->admin()?->getKey()
                 )
             )
@@ -1608,7 +1612,7 @@ class MemberController extends Controller
 
     public function advancedSearchResults(Request $request)
     {
-        $query = Member::query();
+        $query = $this->withoutDeletionRequests(Member::query());
 
         /*
     |--------------------------------------------------------------------------
@@ -1620,7 +1624,7 @@ class MemberController extends Controller
             $query->where(
                 'profile_id',
                 'like',
-                '%'.trim($request->profile_id).'%'
+                '%' . trim($request->profile_id) . '%'
             );
         }
 
@@ -1628,7 +1632,7 @@ class MemberController extends Controller
             $query->where(
                 'full_name',
                 'like',
-                '%'.trim($request->full_name).'%'
+                '%' . trim($request->full_name) . '%'
             );
         }
 
@@ -1636,7 +1640,7 @@ class MemberController extends Controller
             $query->where(
                 'email',
                 'like',
-                '%'.trim($request->email).'%'
+                '%' . trim($request->email) . '%'
             );
         }
 
@@ -1644,7 +1648,7 @@ class MemberController extends Controller
             $query->where(
                 'mobile_number',
                 'like',
-                '%'.trim($request->mobile_number).'%'
+                '%' . trim($request->mobile_number) . '%'
             );
         }
 
@@ -1862,7 +1866,7 @@ class MemberController extends Controller
         $relationshipManagers = Admin::query()
             ->when(
                 $relationshipManagerAccess->isRestricted(),
-                fn ($query) => $query->whereKey(
+                fn($query) => $query->whereKey(
                     $relationshipManagerAccess->admin()?->getKey()
                 )
             )
@@ -2323,7 +2327,7 @@ class MemberController extends Controller
         if (! $photoStillUsed) {
 
             $photoPath = storage_path(
-                'app/public/'.ltrim($photo->photo, '/')
+                'app/public/' . ltrim($photo->photo, '/')
             );
 
             if (is_file($photoPath)) {
@@ -2919,7 +2923,7 @@ class MemberController extends Controller
 
         foreach ($submittedProfileRanges as $index => $range) {
             $filledValues = collect(['range_from', 'range_to', 'price'])
-                ->filter(fn (string $field) => ($range[$field] ?? '') !== '')
+                ->filter(fn(string $field) => ($range[$field] ?? '') !== '')
                 ->count();
 
             if ($filledValues > 0 && $filledValues < 3) {
@@ -2930,14 +2934,16 @@ class MemberController extends Controller
         }
 
         $profileRanges = $submittedProfileRanges
-            ->filter(fn (array $range) => collect($range)->contains(fn ($value) => $value !== null && $value !== ''))
+            ->filter(fn(array $range) => collect($range)->contains(fn($value) => $value !== null && $value !== ''))
             ->sortBy('range_from')
             ->values();
         $previousRangeEnd = 0;
 
         foreach ($profileRanges as $range) {
-            if ((int) $range['range_from'] > (int) $range['range_to']
-                || (int) $range['range_from'] <= $previousRangeEnd) {
+            if (
+                (int) $range['range_from'] > (int) $range['range_to']
+                || (int) $range['range_from'] <= $previousRangeEnd
+            ) {
                 throw ValidationException::withMessages([
                     'profile_ranges' => 'Profile view ranges must have a valid start and end and must not overlap.',
                 ]);
@@ -3014,13 +3020,13 @@ class MemberController extends Controller
             ->where('member_id', $id)
             ->orderByRaw('CAST(range_from AS UNSIGNED)')
             ->get(['range_from', 'range_to', 'price'])
-            ->map(fn (object $range) => [
+            ->map(fn(object $range) => [
                 'range_from' => (int) $range->range_from,
                 'range_to' => (int) $range->range_to,
                 'price' => number_format((float) $range->price, 2, '.', ''),
             ])->values()->all();
 
-        $newProfileRanges = $profileRanges->map(fn (array $range) => [
+        $newProfileRanges = $profileRanges->map(fn(array $range) => [
             'range_from' => (int) $range['range_from'],
             'range_to' => (int) $range['range_to'],
             'price' => number_format((float) $range['price'], 2, '.', ''),
@@ -3046,7 +3052,7 @@ class MemberController extends Controller
             $db->table('member_profile_range')->where('member_id', $id)->delete();
             if ($profileRanges->isNotEmpty()) {
                 $db->table('member_profile_range')->insert(
-                    $profileRanges->map(fn (array $range) => [
+                    $profileRanges->map(fn(array $range) => [
                         'member_id' => $id,
                         'range_from' => $range['range_from'],
                         'range_to' => $range['range_to'],
@@ -3057,14 +3063,14 @@ class MemberController extends Controller
         });
 
         if ($idProof) {
-            $filename = 'id-proof-'.$member->id.'-'.Str::random(10).'.'.$idProof->getClientOriginalExtension();
+            $filename = 'id-proof-' . $member->id . '-' . Str::random(10) . '.' . $idProof->getClientOriginalExtension();
             $idProof->storeAs('id_proofs', $filename, 'public');
 
             $db->table('members')->where('id', $id)->update(['id_proof' => $filename]);
 
             $oldProof = basename((string) $member->id_proof);
             if ($oldProof !== '' && $oldProof !== $filename) {
-                Storage::disk('public')->delete('id_proofs/'.$oldProof);
+                Storage::disk('public')->delete('id_proofs/' . $oldProof);
             }
 
             $changes['id_proof'] = [
@@ -3490,7 +3496,7 @@ class MemberController extends Controller
             ->back()
             ->with(
                 'success',
-                'Rotation scheduled for '.
+                'Rotation scheduled for ' .
                     $nextRotationAt->format('d M Y h:i A')
             );
     }
@@ -3569,8 +3575,18 @@ class MemberController extends Controller
             ->back()
             ->with(
                 'success',
-                'Member rotation scheduled successfully for '.
+                'Member rotation scheduled successfully for ' .
                     $nextRotationAt->format('d M Y h:i A')
             );
+    }
+
+    private function withoutDeletionRequests(Builder $query): Builder
+    {
+        return $query->whereNotExists(function ($requests) {
+            $requests->selectRaw('1')
+                ->from('delete_profile_request')
+                ->whereColumn('delete_profile_request.user_id', 'members.id')
+                ->whereIn('delete_profile_request.status', [0, 1]);
+        });
     }
 }
