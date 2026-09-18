@@ -295,12 +295,11 @@ class MemberPhotoService
 
         /*
     |--------------------------------------------------------------------------
-    | New Laravel storage structure
+    | New Laravel uploads
     |--------------------------------------------------------------------------
     |
-    | New uploads are stored using:
-    |
-    | storage/app/public/members/{memberId}/original/...
+    | New photos are stored under:
+    | storage/app/public/members/{memberId}/...
     |
     */
 
@@ -310,30 +309,32 @@ class MemberPhotoService
 
         /*
     |--------------------------------------------------------------------------
-    | Legacy profile_photos structure
+    | Legacy profile_photos
     |--------------------------------------------------------------------------
     */
 
         $legacyProfilePhotoPath = 'profile_photos/' . $photo;
 
         if (Storage::disk($this->disk)->exists($legacyProfilePhotoPath)) {
-            return Storage::disk($this->disk)->url(
-                $legacyProfilePhotoPath
-            );
+            return Storage::disk($this->disk)->url($legacyProfilePhotoPath);
         }
 
         /*
     |--------------------------------------------------------------------------
-    | Multisite legacy photos
+    | Site-specific legacy photos
     |--------------------------------------------------------------------------
+    |
+    | public/photos/himrishtey/photo/
+    | public/photos/gallpakki/photo/
+    | public/photos/dogririshtey/photo/
+    | public/photos/devbhoomi/photo/
+    |
     */
 
         $siteFolder = $this->legacySitePhotoFolder();
 
         if ($siteFolder) {
-
-            $legacyPath =
-                "photos/{$siteFolder}/photo/{$photo}";
+            $legacyPath = "photos/{$siteFolder}/photo/" . basename($photo);
 
             if (is_file(public_path($legacyPath))) {
                 return asset($legacyPath);
@@ -344,13 +345,9 @@ class MemberPhotoService
     |--------------------------------------------------------------------------
     | Old shared photo directory fallback
     |--------------------------------------------------------------------------
-    |
-    | Keep this because the current combined application already contains
-    | some files under public/photos/photo.
-    |
     */
 
-        $sharedLegacyPath = "photos/photo/{$photo}";
+        $sharedLegacyPath = 'photos/photo/' . basename($photo);
 
         if (is_file(public_path($sharedLegacyPath))) {
             return asset($sharedLegacyPath);
@@ -358,11 +355,11 @@ class MemberPhotoService
 
         /*
     |--------------------------------------------------------------------------
-    | Final storage fallback
+    | Final Laravel storage fallback
     |--------------------------------------------------------------------------
     */
 
-        return asset('storage/' . $photo);
+        return Storage::disk($this->disk)->url($photo);
     }
 
     /**
@@ -375,13 +372,13 @@ class MemberPhotoService
 
         return match ($database) {
 
-            'himrishteymain_base' => 'himrishtey',
+            'newhm_base' => 'himrishtey',
 
-            'himrishteymain_gallpakki' => 'gallpakki',
+            'newhm_gallpakki' => 'gallpakki',
 
-            'himrishteymain_dogririshtey' => 'dogririshtey',
+            'newhm_dogririshtey' => 'dogririshtey',
 
-            'himrishteymain_devbhoomi' => 'devbhoomi',
+            'newhm_devbhoomi' => 'devbhoomi',
 
             default => null,
         };
