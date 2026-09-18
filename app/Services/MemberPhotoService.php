@@ -28,7 +28,7 @@ class MemberPhotoService
             $file->getClientOriginalExtension()
         );
 
-        $filename = Str::uuid()->toString().'.'.$extension;
+        $filename = Str::uuid()->toString() . '.' . $extension;
 
         $directory = "members/{$memberId}";
 
@@ -218,9 +218,7 @@ class MemberPhotoService
         */
 
         if (! $isProfilePhoto) {
-
-            Storage::disk($this->disk)
-                ->delete($photo->photo);
+            $this->deletePhysicalPhoto($photo->photo);
         }
     }
 
@@ -272,13 +270,20 @@ class MemberPhotoService
     /**
      * Get the public URL for a member photo.
      *
-     * Supports both:
-     *
-     * OLD:
-     * filename.jpg
+     * Supports:
      *
      * NEW:
      * members/123/original/filename.jpg
+     *
+     * LEGACY:
+     * filename.jpg
+     *
+     * Legacy photos are stored separately for each site:
+     *
+     * public/photos/himrishtey/photo/
+     * public/photos/gallpakki/photo/
+     * public/photos/dogririshtey/photo/
+     * public/photos/devbhoomi/photo/
      */
     public function url(?string $photo): ?string
     {
@@ -286,36 +291,168 @@ class MemberPhotoService
             return null;
         }
 
+        $photo = ltrim($photo, '/');
+
         /*
     |--------------------------------------------------------------------------
-    | New photo structure
+    | New Laravel storage structure
+    |--------------------------------------------------------------------------
+    |
+    | New uploads are stored using:
+    |
+    | storage/app/public/members/{memberId}/original/...
+    |
+    */
+
+        if (str_starts_with($photo, 'members/')) {
+            return Storage::disk($this->disk)->url($photo);
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | Legacy profile_photos structure
+    |--------------------------------------------------------------------------
+    */
+
+        $legacyProfilePhotoPath = 'profile_photos/' . $photo;
+
+        if (Storage::disk($this->disk)->exists($legacyProfilePhotoPath)) {
+            return Storage::disk($this->disk)->url(
+                $legacyProfilePhotoPath
+            );
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | Multisite legacy photos
+    |--------------------------------------------------------------------------
+    */
+
+        $siteFolder = $this->legacySitePhotoFolder();
+
+        if ($siteFolder) {
+
+            $legacyPath =
+                "photos/{$siteFolder}/photo/{$photo}";
+
+            if (is_file(public_path($legacyPath))) {
+                return asset($legacyPath);
+            }
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | Old shared photo directory fallback
+    |--------------------------------------------------------------------------
+    |
+    | Keep this because the current combined application already contains
+    | some files under public/photos/photo.
+    |
+    */
+
+        $sharedLegacyPath = "photos/photo/{$photo}";
+
+        if (is_file(public_path($sharedLegacyPath))) {
+            return asset($sharedLegacyPath);
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | Final storage fallback
+    |--------------------------------------------------------------------------
+    */
+
+        return asset('storage/' . $photo);
+    }
+
+    /**
+     * Get legacy photo directory for the currently connected site.
+     */
+    protected function legacySitePhotoFolder(): ?string
+    {
+        $database = DB::connection('site')
+            ->getDatabaseName();
+
+        return match ($database) {
+
+            'himrishteymain_base' => 'himrishtey',
+
+            'himrishteymain_gallpakki' => 'gallpakki',
+
+            'himrishteymain_dogririshtey' => 'dogririshtey',
+
+            'himrishteymain_devbhoomi' => 'devbhoomi',
+
+            default => null,
+        };
+    }
+
+    protected function deletePhysicalPhoto(?string $photo): void
+    {
+        if (empty($photo)) {
+            return;
+        }
+
+        $photo = ltrim($photo, '/');
+
+        /*
+    |--------------------------------------------------------------------------
+    | New Laravel storage photo
     |--------------------------------------------------------------------------
     */
 
         if (str_starts_with($photo, 'members/')) {
-            return Storage::disk('public')->url($photo);
-        }
 
-        $legacyProfilePhotoPath = 'profile_photos/'.ltrim($photo, '/');
+            Storage::disk($this->disk)
+                ->delete($photo);
 
-        if (Storage::disk('public')->exists($legacyProfilePhotoPath)) {
-            return Storage::disk('public')->url($legacyProfilePhotoPath);
+            return;
         }
 
         /*
     |--------------------------------------------------------------------------
-    | Existing photo structure
+    | Legacy multisite photo
     |--------------------------------------------------------------------------
-    |
-    | Existing database records contain only the filename.
-    | Keep using the existing public/storage convention.
-    |
     */
 
-        if (is_file(public_path('photos/photo/'.ltrim($photo, '/')))) {
-            return asset('photos/photo/'.ltrim($photo, '/'));
+        $siteFolder = $this->legacySitePhotoFolder();
+
+        if ($siteFolder) {
+
+            $legacyPath = public_path(
+                "photos/{$siteFolder}/photo/{$photo}"
+            );
+
+            if (is_file($legacyPath)) {
+                @unlink($legacyPath);
+
+                return;
+            }
         }
 
-        return asset('storage/'.ltrim($photo, '/'));
+        /*
+    |--------------------------------------------------------------------------
+    | Old shared photo fallback
+    |--------------------------------------------------------------------------
+    */
+
+        $sharedPath = public_path(
+            "photos/photo/{$photo}"
+        );
+
+        if (is_file($sharedPath)) {
+            @unlink($sharedPath);
+
+            return;
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | Storage fallback
+    |--------------------------------------------------------------------------
+    */
+
+        Storage::disk($this->disk)
+            ->delete($photo);
     }
 }
