@@ -3424,7 +3424,7 @@ class MemberController extends Controller
                     'new_remarks' => $newRemarks,
                     'remark_type' => $member->active === 'Yes'
                         ? 'RM Remarks'
-                        : 'Assigned Remarks',
+                        : 'Added Remarks',
                 ]
             );
 
