@@ -7,7 +7,7 @@ return [
 
         'himrishtey.com' => [
             'search_state' => 'Himachal Pradesh',
-            'hosts' => ['himrishtey.ddev.site', 'himrishtey-one.ddev.site', 'himrishtey-combined.ddev.site'],
+            'hosts' => ['him-rishtey.ddev.site', 'diplomatic-lavender-lion.97-74-95-195.cpanel.site'],
             'name' => env('SITE1_NAME', 'Himrishtey'),
             'display_name' => env('SITE1_DISPLAY_NAME', 'HimRishtey'),
             'code' => 'main',
@@ -55,7 +55,7 @@ return [
         ],
         'dogririshtey.com' => [
             'search_state' => 'Jammu and Kashmir',
-            'hosts' => ['dogririshtey.ddev.site', 'dogririshtey-combined.ddev.site'],
+            'hosts' => ['trusting-turquoise-chihuahua.97-74-95-195.cpanel.site'],
             'name' => env('SITE2_NAME', 'Dogri Rishtey'),
             'display_name' => env('SITE2_DISPLAY_NAME', 'Dogri Rishtey'),
             'code' => 'dogririshtey',
@@ -94,7 +94,7 @@ return [
         ],
         'gallpakki.com' => [
             'search_state' => 'Punjab',
-            'hosts' => ['gallpakki.ddev.site', 'gallpakki-combined.ddev.site'],
+            'hosts' => ['happy-charcoal-orangutan.97-74-95-195.cpanel.site'],
             'name' => env('SITE3_NAME', 'Gallpakki'),
             'display_name' => env('SITE3_DISPLAY_NAME', 'Gallpakki'),
             'code' => 'gallpakki',
@@ -133,7 +133,7 @@ return [
         ],
         'devbhoomirishtey.com' => [
             'search_state' => 'Uttarakhand',
-            'hosts' => ['devbhoomi-combined.ddev.site', 'devbhoomi.ddev.site', 'devbhoomirishte.com', 'devbhoomirishte.ddev.site', 'devbhoomirishtey.com', 'devbhoomirishtey.ddev.site'],
+            'hosts' => ['caring-blue-bear.97-74-95-195.cpanel.site'],
             'name' => env('SITE4_NAME', 'Dev Bhoomi Rishtey'),
             'display_name' => env('SITE4_DISPLAY_NAME', 'Dev Bhoomi Rishtey'),
             'code' => 'devbhoomi',
